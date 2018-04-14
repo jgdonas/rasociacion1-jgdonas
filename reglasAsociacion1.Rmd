@@ -1,0 +1,11 @@
+---
+title: "Reglas de asociación 1"
+author: "Jose Antonio Gonzalez Doñas"
+date: "15 de abril de 2018"
+output: html_document
+---
+
+Para la realización de este ejercicio de toma de contacto con GitHub y R, vamos a hacer uso de un dataset que contiene información sobre los datos del clima en España desde los años 20, que se puede descargar desde [la web data.world](https://data.world/chucheria/spain-weather-data-from-1920).
+
+Como la cantidad de datos disponible es ingente, vamos a trabajar únicamente con el fichero que contiene los datos más actuales, y a su vez es suficientemente grande, esto es, el que contiene [datos desde 2005 y 2009](https://data.world/chucheria/spain-weather-data-from-1920/workspace/file?filename=2005-2009_weather-data-spain.csv), con un total de 168.815 filas y 29 columnas (28.91 MB en formato csv)
+
