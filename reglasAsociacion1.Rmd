@@ -9,3 +9,223 @@ Para la realización de este ejercicio de toma de contacto con GitHub y R, vamos
 
 Como la cantidad de datos disponible es ingente, vamos a trabajar únicamente con el fichero que contiene los datos más actuales, y a su vez es suficientemente grande, esto es, el que contiene [datos desde 2005 y 2009](https://data.world/chucheria/spain-weather-data-from-1920/workspace/file?filename=2005-2009_weather-data-spain.csv), con un total de 168.815 filas y 29 columnas (28.91 MB en formato csv)
 
+##Sobre el dataset
+
+La información meteorológica compartida por [@chucheria](https://data.world/chucheria) en la web antes mencionada, contiene información también de las estaciones, por lo que no es necesario buscar información sobre ellas aparte. 
+
+Toda esta información es a su vez una recopilación de la que comparte de forma pública [aemet](www.aemet.com), aunque la usuaria antes mencionada ha tenido que realizar trabajo de limpieza de datos, no obstante.
+
+Toda la información ha sido clasificada en bloques de 10 años para las primeras décadas de toma de datos y posteriormente, en bloques de 5 años, ya que con el paso del tiempo la toma de datos se hace más frecuente y con ello aumenta el tamaño de la información obtenida; de esta forma los datos son más manejables. Cada línea de las tablas es una medida agrupada por estación y fecha.
+
+Los campos usados son:
+
+* **station_id**: ID de la estación meteorológica.
+* **station_name**: nombre de la estación meteorológica.
+* **lat**: latitud de la estación. Positivo si la dirección es norte, negativo si la dirección es sur.
+* **lat_dir**: N (norte), S (sur).
+* **long**: Longitud de la estacion. Positivo si la dirección es este, negativo si la dirección es oeste.
+* **lat_dir**: E (este), W (oeste).
+* **altitude**: Altitud de la estación en metros.
+* **town**: Ciudad donde se ubica la estación.
+* **province**: Provincia donde se ubica la estación.
+* **year**: Año de la medición.
+* **month**: Mes de la medición: 1 a 12 referidos a los meses desde Enero a Diciembre..
+* **day**: Día de la medida.
+* **max_temp**: Temperatura máxima en la estación para ese día, en ºC.
+* **max_temp_time**: Hora de a la que se dio la temperatura máxima en formato %H:%M. "Varias" significa que se dio a distintas horas del día.
+* **min_temp**: Temperatura mínima en la estación para ese día, en ºC.
+* **min_temp_time**: Hora de a la que se dio la temperatura mínima en formato %H:%M. "Varias" significa que se dio a distintas horas del día.
+* **avg_temp**: Temperatura media del día, en ºC.
+* **max_wind**: Máxima velocidad del viento, en m/sec.
+* **max_wind_direction**: Dirección del viento que alcanzó mayor velocidad en grados.
+* **max_wind_time**: Hora de la máxima velocidad del viento, en formato %H:%M.
+* **avg_wind**: Velocidad media del viento, en m/sec.
+* **rainfall**: Lluvia caida durante el día, en mm.
+* **sun**: Horas de sol.
+* **max_atmospheric_pressure**: Máxima presión atmosférica, in hPa.
+* **max_atmospheric_pressure_hour**: Hora de máxima presión atmosférica.
+* **min_atmospheric_pressure**: Hora de mínima presión atmosférica.
+* **min_atmospheric_pressure_hour**: Hora de mínima presión atmosférica.
+
+
+de los cuales nosotros no usaremos todos, ya que para el caso que nos ocupa no vamos a profundizar mucho, y que además hay datos que por el momento podemos obviar.
+
+Procedemos a elegir los datos con los que trabajar (repito, nos quedaremos con unas pocas columnas, aunque sería muy interesante hacer uso de todos los datos en el futuro).
+
+##Selección de datos y discretización.
+
+Cargamos en memoria en primer lugar la información contenida en el fichero csv:
+
+```{r}
+library(readr)
+allWeatherData <- read_csv("2005_2009_weather_data_spain.csv")
+```
+
+De todos los datos disponibles, en esta ocasión vamos a trabajar con los típicos parámetros: 
+ 
+ * altitud
+ * lluvia
+ * horas de sol
+ * máxima y minima temperatura
+ * máxima y mínima presión atmosférica
+ 
+Así pues, almaceno en otra variable estos datos en formato **data.frame**
+
+```{r}
+basicWeather <- data.frame("altitude"=allWeatherData$altitude,
+                           "rainfall"=allWeatherData$rainfall,
+                           "sun"=allWeatherData$sun,
+                           "max.temp"=allWeatherData$max_temp,
+                           "min.temp"=allWeatherData$min_temp,
+                           "max.press"=allWeatherData$max_atmospheric_pressure,
+                           "min.press"=allWeatherData$min_atmospheric_pressure)
+```
+
+Un primer análisis de los datos podemos conseguirlo mediante **summary**
+
+```{r}
+summary(basicWeather)
+```
+
+Estos datos nos dejan ver que, por ejemplo, vamos a entontarnos con muchas mediciones donde no está disponible los valores de presión o de horas de sol, y se tendrá que tener en cuenta a la hora de proceder a las conclusiones. 
+
+Como podemos ver, todas estas columnas contienen valores numéricos 
+
+```{r}
+ View(head(basicWeather))
+```
+
+por lo que será necesario, o bien factorizar los valores, o bien discretizarlos. Aprovechando el bajo número de columnas, vamos a proceder a discretizar los valores haciendo uso de quantiles:
+
+* para altitud, tomaremos valores mar, bajo, media, alta, muy alta
+* para las lluvias: nada, poco, mucho. No uso más intervalos ya que los datos se concentran mucho y los pencentiles dan problemas a la hora de usar la función **cut** Aparece un valor desconocído: Ip, que tomaré como "inapreciable", es decir, 0.
+* para las horas de sol usaré: poco, normal, soleado, muy soleado.
+* para las referentes a las temperaturas: bajas, templadas, altas, muy altas
+* para las presiones, baja, normal, altas, muy alta
+
+```{r}
+basicWeather$altitude <- ordered(cut(basicWeather$altitude,c(0,quantile(basicWeather$altitude,.25),median(basicWeather$altitude),quantile(basicWeather$altitude,.75),Inf)),labels=c("mar", "baja", "media", "alta"))
+
+```
+
+Como los datos de lluvia tienen el dato extraño **Ip**, lo debemos sustituir por 0 antes de discretizar (lo mismo para un valor "Acum" que aparece en unas pocas filas, y los valores NA. NOTA: entiendo es estas modificacoines de datos pueden conllevar a conclusiones incorrectas, ya que estamos interpretando esos valores como lluvía igual a cero, pero como el objetivo de esta práctica no es encontrar reglas reales sino demostrar que se manejar datasets de forma básica, vamos a obviar todas las suposiciones que estoy considerando):
+
+```{r}
+basicWeather$rainfall[which(basicWeather$rainfall == "Ip")] <- 0
+basicWeather$rainfall[which(basicWeather$rainfall == "Acum")] <- 0
+basicWeather$rainfall[which(is.na(basicWeather$rainfall))] <- 0
+basicWeather$rainfall <- ordered(cut(as.numeric(basicWeather$rainfall),
+                                 c(0,
+                                 median(as.numeric(basicWeather$rainfall)),
+                                 quantile(as.numeric(basicWeather$rainfall),.75),
+                                 Inf)),
+                                 labels=c("nada", "poco", "mucho"))
+```
+
+```{r}
+basicWeather$sun <- ordered(cut(basicWeather$sun,
+                                c(0,
+                                  quantile(basicWeather$sun,.25,na.rm = T),
+                                  median(basicWeather$sun,na.rm = T),
+                                  quantile(basicWeather$sun,.75,na.rm = T),
+                                  Inf)),
+                                  labels=c("poco", "normal", "soleado", "muy soleado"))
+```
+
+```{r}
+basicWeather$max.temp <- ordered(cut(basicWeather$max.temp,
+                                     c(0,
+                                       quantile(basicWeather$max.temp,.25,na.rm = T),
+                                       median(basicWeather$max.temp,na.rm = T),
+                                       quantile(basicWeather$max.temp,.75,na.rm = T),
+                                       Inf)),
+                                       labels=c("bajas", "templadas", "altas", "muy altas"))
+```
+
+```{r}
+basicWeather$min.temp <- ordered(cut(basicWeather$min.temp,
+                                     c(0,
+                                       quantile(basicWeather$min.temp,.25,na.rm = T),
+                                       median(basicWeather$min.temp,na.rm = T),
+                                       quantile(basicWeather$min.temp,.75,na.rm = T),
+                                       Inf)),
+                                       labels=c("bajas", "templadas", "altas", "muy altas"))
+```
+
+```{r}
+basicWeather$max.press <- ordered(cut(basicWeather$max.press,
+                                      c(0,
+                                        quantile(basicWeather$max.press,.25,na.rm = T),
+                                        median(basicWeather$max.press,na.rm = T),
+                                        quantile(basicWeather$max.press,.75,na.rm = T),
+                                        Inf)),
+                                        labels=c("bajas", "normal", "altas", "muy altas"))
+```
+
+```{r}
+basicWeather$min.press <- ordered(cut(basicWeather$min.press,
+                                      c(0,
+                                        quantile(basicWeather$min.press,.25,na.rm = T),
+                                        median(basicWeather$min.press,na.rm = T),
+                                        quantile(basicWeather$min.press,.75,na.rm = T),
+                                        Inf)),
+                                        labels=c("bajas", "normal", "altas", "muy altas"))
+```
+
+
+Con los datos listos, únicamente nos faltaría obtener las reglas de asociación acorde a los parametros que nosotros mismos nos queramos imponer. Pero antes de todo, debemos cargar la librería **arules**
+
+```{r}
+library(arules)
+```
+
+Y ahora si, podemos obtener las reglas (como con soporte de 0.5 no obtenemos ninguna, bajamos las restricciones hasta entonctrar un conjunto medianamente grande):
+
+```{r}
+apriori(basicWeather, parameter=list(support=.5))
+```
+
+```{r}
+rules <- apriori(basicWeather, parameter=list(support=.1))
+summary(rules)
+```
+
+Como se puede comprobar con summary, aunque el soporte de las reglas obtenidas no es muy alto, si que tenemos algunas de ellas con alta confianza, y un **lift** interesante en algunos casos.
+
+Comprobemos cuales son precisamente las 10 reglas con mayor **lift**, tras ordenar por ese criterio. Esto es muy fácil gracias al método **sort**, que permite hacer todo ello de una sola vez.
+
+Antes, mostremos todas las reglas obtenidas (65)
+
+```{r}
+inspect(rules)
+inspect(sort(rules, n=10, by="lift"))
+```
+
+NOTA: en mi caso, parece que el parámetro **n=10** no funciona, por lo que tomo las 10 primera reglas con un método "manual"
+
+```{r}
+inspect(sort(rules, by="lift",decreasing=T,na.last=NA)[0:10])
+```
+
+
+##Conclusiones
+
+Vistas las reglas obtenidas, mis conclusiones son:
+
+1. **Las reglas obtenidas, en general, no son nada interesantes**. Ello es, con toda seguridad, debido a la pobre discretización de los datos, y a la elección de columnas múy básicas. El hecho de no profundizar más, tampoco permite obtener mejores resultados. Por ejemplo, veo muchas reglas en las que el consecuente es la altutid, lo cual no es nada relevante, ya que dificilmente ninguna condición va a determinar que un lugar esté más o menos alto, más bien todo lo contrario: la altitud debería ser antecedente de otras reglas. Por ello, sería interesante obtener reglas donde la altitud no esté en el lado **rhs** de la regla (se puede hacer con subset, como  ya hemos visto en clase).
+
+2. Hay un gran número de reglas redundantes, que por cierto podrían ser eliminadas fácilmente (**is.redundant** es un gran método para ello).
+
+3. Las reglas que podrían considerarse interesantes, son muy evidentes, como por ejemplo:
+
+```{r}
+{altitude=mar,min.temp=muy altas}                      => {rainfall=nada} 
+{min.temp=muy altas}                                   => {rainfall=nada}       
+{altitude=mar,min.press=muy altas}                     => {rainfall=nada}
+```
+
+que aunque no aportan absolutamente al conocimiento popular, al menos nos hacen pensar que tampoco se obtienen reglas "locas", es decir, que al fin y al cabo el método funciona.
+
+Por lo tanto, la reflexión final sería que la herramienta, con un uso más adecuado y concienzudo, tiene potencial suficiente como para encontrar información "oculta" muy interesante, en este caso, relacionado con el comportamiento del clima.
+
+Mi propuesta para fases próximas sería la de usar el máximo de datos posibles, así como conceptos no aplicados hasta el momento como el de eliminación de redundancia para poder obtener de este cojunto de datos el máximo conocimiento posible.
