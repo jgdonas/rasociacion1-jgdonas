@@ -196,7 +196,7 @@ Comprobemos cuales son precisamente las 10 reglas con mayor **lift**, tras orden
 
 Antes, mostremos todas las reglas obtenidas (65)
 
-```{r}
+```{r,error=T}
 inspect(rules)
 inspect(sort(rules, n=10, by="lift"))
 ```
@@ -218,7 +218,7 @@ Vistas las reglas obtenidas, mis conclusiones son:
 
 3. Las reglas que podrían considerarse interesantes, son muy evidentes, como por ejemplo:
 
-```{r}
+```{r eval=FALSE, include=FALSE}
 {altitude=mar,min.temp=muy altas}                      => {rainfall=nada} 
 {min.temp=muy altas}                                   => {rainfall=nada}       
 {altitude=mar,min.press=muy altas}                     => {rainfall=nada}

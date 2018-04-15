@@ -282,6 +282,245 @@ basicWeather$rainfall &lt;- ordered(cut(as.numeric(basicWeather$rainfall),
                                         quantile(basicWeather$min.press,.75,na.rm = T),
                                         Inf)),
                                         labels=c(&quot;bajas&quot;, &quot;normal&quot;, &quot;altas&quot;, &quot;muy altas&quot;))</code></pre>
+<p>Con los datos listos, únicamente nos faltaría obtener las reglas de asociación acorde a los parametros que nosotros mismos nos queramos imponer. Pero antes de todo, debemos cargar la librería <strong>arules</strong></p>
+<pre class="r"><code>library(arules)</code></pre>
+<pre><code>## Loading required package: Matrix</code></pre>
+<pre><code>## 
+## Attaching package: 'arules'</code></pre>
+<pre><code>## The following objects are masked from 'package:base':
+## 
+##     abbreviate, write</code></pre>
+<p>Y ahora si, podemos obtener las reglas (como con soporte de 0.5 no obtenemos ninguna, bajamos las restricciones hasta entonctrar un conjunto medianamente grande):</p>
+<pre class="r"><code>apriori(basicWeather, parameter=list(support=.5))</code></pre>
+<pre><code>## Apriori
+## 
+## Parameter specification:
+##  confidence minval smax arem  aval originalSupport maxtime support minlen
+##         0.8    0.1    1 none FALSE            TRUE       5     0.5      1
+##  maxlen target   ext
+##      10  rules FALSE
+## 
+## Algorithmic control:
+##  filter tree heap memopt load sort verbose
+##     0.1 TRUE TRUE  FALSE TRUE    2    TRUE
+## 
+## Absolute minimum support count: 84407 
+## 
+## set item appearances ...[0 item(s)] done [0.00s].
+## set transactions ...[27 item(s), 168815 transaction(s)] done [0.03s].
+## sorting and recoding items ... [1 item(s)] done [0.00s].
+## creating transaction tree ... done [0.02s].
+## checking subsets of size 1 done [0.00s].
+## writing ... [0 rule(s)] done [0.00s].
+## creating S4 object  ... done [0.01s].</code></pre>
+<pre><code>## set of 0 rules</code></pre>
+<pre class="r"><code>rules &lt;- apriori(basicWeather, parameter=list(support=.1))</code></pre>
+<pre><code>## Apriori
+## 
+## Parameter specification:
+##  confidence minval smax arem  aval originalSupport maxtime support minlen
+##         0.8    0.1    1 none FALSE            TRUE       5     0.1      1
+##  maxlen target   ext
+##      10  rules FALSE
+## 
+## Algorithmic control:
+##  filter tree heap memopt load sort verbose
+##     0.1 TRUE TRUE  FALSE TRUE    2    TRUE
+## 
+## Absolute minimum support count: 16881 
+## 
+## set item appearances ...[0 item(s)] done [0.00s].
+## set transactions ...[27 item(s), 168815 transaction(s)] done [0.03s].
+## sorting and recoding items ... [26 item(s)] done [0.01s].
+## creating transaction tree ... done [0.09s].
+## checking subsets of size 1 2 3 4 done [0.00s].
+## writing ... [65 rule(s)] done [0.00s].
+## creating S4 object  ... done [0.02s].</code></pre>
+<pre class="r"><code>summary(rules)</code></pre>
+<pre><code>## set of 65 rules
+## 
+## rule length distribution (lhs + rhs):sizes
+##  2  3  4 
+## 22 32 11 
+## 
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##   2.000   2.000   3.000   2.831   3.000   4.000 
+## 
+## summary of quality measures:
+##     support         confidence          lift           count      
+##  Min.   :0.1035   Min.   :0.8067   Min.   :1.092   Min.   :17467  
+##  1st Qu.:0.1518   1st Qu.:0.8849   1st Qu.:3.527   1st Qu.:25627  
+##  Median :0.1708   Median :0.9180   Median :3.779   Median :28833  
+##  Mean   :0.1814   Mean   :0.9167   Mean   :3.285   Mean   :30630  
+##  3rd Qu.:0.2161   3rd Qu.:0.9550   3rd Qu.:3.935   3rd Qu.:36478  
+##  Max.   :0.2370   Max.   :0.9917   Max.   :4.088   Max.   :40001  
+## 
+## mining info:
+##          data ntransactions support confidence
+##  basicWeather        168815     0.1        0.8</code></pre>
+<p>Como se puede comprobar con summary, aunque el soporte de las reglas obtenidas no es muy alto, si que tenemos algunas de ellas con alta confianza, y un <strong>lift</strong> interesante en algunos casos.</p>
+<p>Comprobemos cuales son precisamente las 10 reglas con mayor <strong>lift</strong>, tras ordenar por ese criterio. Esto es muy fácil gracias al método <strong>sort</strong>, que permite hacer todo ello de una sola vez.</p>
+<p>Antes, mostremos todas las reglas obtenidas (65)</p>
+<pre class="r"><code>inspect(rules)</code></pre>
+<pre><code>##      lhs                      rhs                     support confidence     lift count
+## [1]  {sun=muy soleado}     =&gt; {rainfall=nada}       0.2160827  0.9711152 1.314729 36478
+## [2]  {sun=soleado}         =&gt; {rainfall=nada}       0.2095430  0.9088667 1.230455 35374
+## [3]  {altitude=alta}       =&gt; {max.press=bajas}     0.2248615  0.9169304 3.779553 37960
+## [4]  {max.press=bajas}     =&gt; {altitude=alta}       0.2248615  0.9268710 3.779553 37960
+## [5]  {altitude=alta}       =&gt; {min.press=bajas}     0.2229837  0.9092732 3.743512 37643
+## [6]  {min.press=bajas}     =&gt; {altitude=alta}       0.2229837  0.9180324 3.743512 37643
+## [7]  {max.press=bajas}     =&gt; {min.press=bajas}     0.2369517  0.9767061 4.021136 40001
+## [8]  {min.press=bajas}     =&gt; {max.press=bajas}     0.2369517  0.9755390 4.021136 40001
+## [9]  {max.press=normal}    =&gt; {min.press=normal}    0.2315256  0.9549930 3.937504 39085
+## [10] {min.press=normal}    =&gt; {max.press=normal}    0.2315256  0.9545965 3.937504 39085
+## [11] {max.press=normal}    =&gt; {altitude=media}      0.2133341  0.8799570 3.542639 36014
+## [12] {altitude=media}      =&gt; {max.press=normal}    0.2133341  0.8588667 3.542639 36014
+## [13] {min.press=normal}    =&gt; {altitude=media}      0.2098036  0.8650352 3.482565 35418
+## [14] {altitude=media}      =&gt; {min.press=normal}    0.2098036  0.8446532 3.482565 35418
+## [15] {min.press=muy altas} =&gt; {max.press=muy altas} 0.2200871  0.9128523 3.778520 37154
+## [16] {max.press=muy altas} =&gt; {min.press=muy altas} 0.2200871  0.9109945 3.778520 37154
+## [17] {min.press=muy altas} =&gt; {rainfall=nada}       0.1996683  0.8281615 1.121193 33707
+## [18] {max.press=muy altas} =&gt; {rainfall=nada}       0.1948879  0.8066889 1.092123 32900
+## [19] {min.press=altas}     =&gt; {max.press=altas}     0.2168054  0.8913785 3.664923 36600
+## [20] {max.press=altas}     =&gt; {min.press=altas}     0.2168054  0.8914002 3.664923 36600
+## [21] {min.temp=muy altas}  =&gt; {rainfall=nada}       0.2118769  0.8568622 1.160049 35768
+## [22] {max.temp=muy altas}  =&gt; {rainfall=nada}       0.2262299  0.9146230 1.238248 38191
+## [23] {sun=muy soleado,                                                                 
+##       max.temp=muy altas}  =&gt; {rainfall=nada}       0.1337322  0.9780358 1.324098 22576
+## [24] {altitude=alta,                                                                   
+##       max.press=bajas}     =&gt; {min.press=bajas}     0.2211415  0.9834563 4.048926 37332
+## [25] {altitude=alta,                                                                   
+##       min.press=bajas}     =&gt; {max.press=bajas}     0.2211415  0.9917382 4.087908 37332
+## [26] {max.press=bajas,                                                                 
+##       min.press=bajas}     =&gt; {altitude=alta}       0.2211415  0.9332767 3.805674 37332
+## [27] {altitude=alta,                                                                   
+##       rainfall=nada}       =&gt; {max.press=bajas}     0.1651986  0.8984536 3.703393 27888
+## [28] {rainfall=nada,                                                                   
+##       max.press=bajas}     =&gt; {altitude=alta}       0.1651986  0.9418122 3.840480 27888
+## [29] {altitude=alta,                                                                   
+##       rainfall=nada}       =&gt; {min.press=bajas}     0.1634274  0.8888209 3.659309 27589
+## [30] {rainfall=nada,                                                                   
+##       min.press=bajas}     =&gt; {altitude=alta}       0.1634274  0.9383694 3.826441 27589
+## [31] {rainfall=nada,                                                                   
+##       max.press=bajas}     =&gt; {min.press=bajas}     0.1707964  0.9737260 4.008866 28833
+## [32] {rainfall=nada,                                                                   
+##       min.press=bajas}     =&gt; {max.press=bajas}     0.1707964  0.9806809 4.042331 28833
+## [33] {max.press=normal,                                                                
+##       min.press=normal}    =&gt; {altitude=media}      0.2071321  0.8946399 3.601751 34967
+## [34] {altitude=media,                                                                  
+##       max.press=normal}    =&gt; {min.press=normal}    0.2071321  0.9709280 4.003205 34967
+## [35] {altitude=media,                                                                  
+##       min.press=normal}    =&gt; {max.press=normal}    0.2071321  0.9872664 4.072260 34967
+## [36] {rainfall=nada,                                                                   
+##       max.press=normal}    =&gt; {min.press=normal}    0.1658739  0.9597614 3.957164 28002
+## [37] {rainfall=nada,                                                                   
+##       min.press=normal}    =&gt; {max.press=normal}    0.1658739  0.9631617 3.972833 28002
+## [38] {rainfall=nada,                                                                   
+##       max.press=normal}    =&gt; {altitude=media}      0.1514202  0.8761311 3.527236 25562
+## [39] {altitude=media,                                                                  
+##       rainfall=nada}       =&gt; {max.press=normal}    0.1514202  0.8720363 3.596961 25562
+## [40] {rainfall=nada,                                                                   
+##       min.press=normal}    =&gt; {altitude=media}      0.1497201  0.8693633 3.499990 25275
+## [41] {altitude=media,                                                                  
+##       rainfall=nada}       =&gt; {min.press=normal}    0.1497201  0.8622454 3.555099 25275
+## [42] {altitude=mar,                                                                    
+##       min.press=muy altas} =&gt; {max.press=muy altas} 0.1689720  0.9270996 3.837493 28525
+## [43] {altitude=mar,                                                                    
+##       max.press=muy altas} =&gt; {min.press=muy altas} 0.1689720  0.9304867 3.859367 28525
+## [44] {max.press=muy altas,                                                             
+##       min.press=muy altas} =&gt; {rainfall=nada}       0.1815597  0.8249448 1.116839 30650
+## [45] {rainfall=nada,                                                                   
+##       min.press=muy altas} =&gt; {max.press=muy altas} 0.1815597  0.9093067 3.763844 30650
+## [46] {rainfall=nada,                                                                   
+##       max.press=muy altas} =&gt; {min.press=muy altas} 0.1815597  0.9316109 3.864030 30650
+## [47] {altitude=mar,                                                                    
+##       min.press=muy altas} =&gt; {rainfall=nada}       0.1518052  0.8329108 1.127623 25627
+## [48] {altitude=mar,                                                                    
+##       max.press=muy altas} =&gt; {rainfall=nada}       0.1476646  0.8131524 1.100874 24928
+## [49] {altitude=baja,                                                                   
+##       min.press=altas}     =&gt; {max.press=altas}     0.1591446  0.9314242 3.829572 26866
+## [50] {altitude=baja,                                                                   
+##       max.press=altas}     =&gt; {min.press=altas}     0.1591446  0.9304242 3.825367 26866
+## [51] {rainfall=nada,                                                                   
+##       min.press=altas}     =&gt; {max.press=altas}     0.1526997  0.9004471 3.702209 25778
+## [52] {rainfall=nada,                                                                   
+##       max.press=altas}     =&gt; {min.press=altas}     0.1526997  0.8848689 3.638070 25778
+## [53] {max.temp=muy altas,                                                              
+##       min.temp=muy altas}  =&gt; {rainfall=nada}       0.1438675  0.9145579 1.238160 24287
+## [54] {altitude=mar,                                                                    
+##       min.temp=muy altas}  =&gt; {rainfall=nada}       0.1034683  0.8644462 1.170317 17467
+## [55] {altitude=alta,                                                                   
+##       rainfall=nada,                                                                   
+##       max.press=bajas}     =&gt; {min.press=bajas}     0.1619643  0.9804217 4.036433 27342
+## [56] {altitude=alta,                                                                   
+##       rainfall=nada,                                                                   
+##       min.press=bajas}     =&gt; {max.press=bajas}     0.1619643  0.9910472 4.085060 27342
+## [57] {rainfall=nada,                                                                   
+##       max.press=bajas,                                                                 
+##       min.press=bajas}     =&gt; {altitude=alta}       0.1619643  0.9482884 3.866888 27342
+## [58] {rainfall=nada,                                                                   
+##       max.press=normal,                                                                
+##       min.press=normal}    =&gt; {altitude=media}      0.1479430  0.8919006 3.590723 24975
+## [59] {altitude=media,                                                                  
+##       rainfall=nada,                                                                   
+##       max.press=normal}    =&gt; {min.press=normal}    0.1479430  0.9770362 4.028389 24975
+## [60] {altitude=media,                                                                  
+##       rainfall=nada,                                                                   
+##       min.press=normal}    =&gt; {max.press=normal}    0.1479430  0.9881306 4.075824 24975
+## [61] {altitude=mar,                                                                    
+##       max.press=muy altas,                                                             
+##       min.press=muy altas} =&gt; {rainfall=nada}       0.1400942  0.8290973 1.122460 23650
+## [62] {altitude=mar,                                                                    
+##       rainfall=nada,                                                                   
+##       min.press=muy altas} =&gt; {max.press=muy altas} 0.1400942  0.9228548 3.819923 23650
+## [63] {altitude=mar,                                                                    
+##       rainfall=nada,                                                                   
+##       max.press=muy altas} =&gt; {min.press=muy altas} 0.1400942  0.9487323 3.935045 23650
+## [64] {altitude=baja,                                                                   
+##       rainfall=nada,                                                                   
+##       min.press=altas}     =&gt; {max.press=altas}     0.1140835  0.9362664 3.849480 19259
+## [65] {altitude=baja,                                                                   
+##       rainfall=nada,                                                                   
+##       max.press=altas}     =&gt; {min.press=altas}     0.1140835  0.9372232 3.853320 19259</code></pre>
+<pre class="r"><code>inspect(sort(rules, n=10, by=&quot;lift&quot;))</code></pre>
+<pre><code>## Error in .local(x, decreasing, ...): na.last not supported. NAs are always put last.</code></pre>
+<p>NOTA: en mi caso, parece que el parámetro <strong>n=10</strong> no funciona, por lo que tomo las 10 primera reglas con un método “manual”</p>
+<pre class="r"><code>inspect(sort(rules, by=&quot;lift&quot;,decreasing=T,na.last=NA)[0:10])</code></pre>
+<pre><code>##      lhs                   rhs                  support confidence     lift count
+## [1]  {altitude=alta,                                                             
+##       min.press=bajas}  =&gt; {max.press=bajas}  0.2211415  0.9917382 4.087908 37332
+## [2]  {altitude=alta,                                                             
+##       rainfall=nada,                                                             
+##       min.press=bajas}  =&gt; {max.press=bajas}  0.1619643  0.9910472 4.085060 27342
+## [3]  {altitude=media,                                                            
+##       rainfall=nada,                                                             
+##       min.press=normal} =&gt; {max.press=normal} 0.1479430  0.9881306 4.075824 24975
+## [4]  {altitude=media,                                                            
+##       min.press=normal} =&gt; {max.press=normal} 0.2071321  0.9872664 4.072260 34967
+## [5]  {altitude=alta,                                                             
+##       max.press=bajas}  =&gt; {min.press=bajas}  0.2211415  0.9834563 4.048926 37332
+## [6]  {rainfall=nada,                                                             
+##       min.press=bajas}  =&gt; {max.press=bajas}  0.1707964  0.9806809 4.042331 28833
+## [7]  {altitude=alta,                                                             
+##       rainfall=nada,                                                             
+##       max.press=bajas}  =&gt; {min.press=bajas}  0.1619643  0.9804217 4.036433 27342
+## [8]  {altitude=media,                                                            
+##       rainfall=nada,                                                             
+##       max.press=normal} =&gt; {min.press=normal} 0.1479430  0.9770362 4.028389 24975
+## [9]  {max.press=bajas}  =&gt; {min.press=bajas}  0.2369517  0.9767061 4.021136 40001
+## [10] {min.press=bajas}  =&gt; {max.press=bajas}  0.2369517  0.9755390 4.021136 40001</code></pre>
+</div>
+<div id="conclusiones" class="section level2">
+<h2>Conclusiones</h2>
+<p>Vistas las reglas obtenidas, mis conclusiones son:</p>
+<ol style="list-style-type: decimal">
+<li><p><strong>Las reglas obtenidas, en general, no son nada interesantes</strong>. Ello es, con toda seguridad, debido a la pobre discretización de los datos, y a la elección de columnas múy básicas. El hecho de no profundizar más, tampoco permite obtener mejores resultados. Por ejemplo, veo muchas reglas en las que el consecuente es la altutid, lo cual no es nada relevante, ya que dificilmente ninguna condición va a determinar que un lugar esté más o menos alto, más bien todo lo contrario: la altitud debería ser antecedente de otras reglas. Por ello, sería interesante obtener reglas donde la altitud no esté en el lado <strong>rhs</strong> de la regla (se puede hacer con subset, como ya hemos visto en clase).</p></li>
+<li><p>Hay un gran número de reglas redundantes, que por cierto podrían ser eliminadas fácilmente (<strong>is.redundant</strong> es un gran método para ello).</p></li>
+<li><p>Las reglas que podrían considerarse interesantes, son muy evidentes, como por ejemplo:</p></li>
+</ol>
+<p>que aunque no aportan absolutamente al conocimiento popular, al menos nos hacen pensar que tampoco se obtienen reglas “locas”, es decir, que al fin y al cabo el método funciona.</p>
+<p>Por lo tanto, la reflexión final sería que la herramienta, con un uso más adecuado y concienzudo, tiene potencial suficiente como para encontrar información “oculta” muy interesante, en este caso, relacionado con el comportamiento del clima.</p>
+<p>Mi propuesta para fases próximas sería la de usar el máximo de datos posibles, así como conceptos no aplicados hasta el momento como el de eliminación de redundancia para poder obtener de este cojunto de datos el máximo conocimiento posible.</p>
 </div>
 
 
