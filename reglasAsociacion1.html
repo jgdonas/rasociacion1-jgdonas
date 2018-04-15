@@ -125,7 +125,164 @@ $(document).ready(function () {
 </div>
 
 
-<p>Para la realización de este ejercicio de toma de contacto con GitHub y R, vamos a hacer uso de un dataset que contiene información sobre los datos del clima en España desde los años 20, que se puede descargar desde <a href="https://data.world/chucheria/spain-weather-data-from-1920">link</a></p>
+<p>Para la realización de este ejercicio de toma de contacto con GitHub y R, vamos a hacer uso de un dataset que contiene información sobre los datos del clima en España desde los años 20, que se puede descargar desde <a href="https://data.world/chucheria/spain-weather-data-from-1920">la web data.world</a>.</p>
+<p>Como la cantidad de datos disponible es ingente, vamos a trabajar únicamente con el fichero que contiene los datos más actuales, y a su vez es suficientemente grande, esto es, el que contiene <a href="https://data.world/chucheria/spain-weather-data-from-1920/workspace/file?filename=2005-2009_weather-data-spain.csv">datos desde 2005 y 2009</a>, con un total de 168.815 filas y 29 columnas (28.91 MB en formato csv)</p>
+<div id="sobre-el-dataset" class="section level2">
+<h2>Sobre el dataset</h2>
+<p>La información meteorológica compartida por <span class="citation">[@chucheria]</span>(<a href="https://data.world/chucheria" class="uri">https://data.world/chucheria</a>) en la web antes mencionada, contiene información también de las estaciones, por lo que no es necesario buscar información sobre ellas aparte.</p>
+<p>Toda esta información es a su vez una recopilación de la que comparte de forma pública <a href="www.aemet.com">aemet</a>, aunque la usuaria antes mencionada ha tenido que realizar trabajo de limpieza de datos, no obstante.</p>
+<p>Toda la información ha sido clasificada en bloques de 10 años para las primeras décadas de toma de datos y posteriormente, en bloques de 5 años, ya que con el paso del tiempo la toma de datos se hace más frecuente y con ello aumenta el tamaño de la información obtenida; de esta forma los datos son más manejables. Cada línea de las tablas es una medida agrupada por estación y fecha.</p>
+<p>Los campos usados son:</p>
+<ul>
+<li><strong>station_id</strong>: ID de la estación meteorológica.</li>
+<li><strong>station_name</strong>: nombre de la estación meteorológica.</li>
+<li><strong>lat</strong>: latitud de la estación. Positivo si la dirección es norte, negativo si la dirección es sur.</li>
+<li><strong>lat_dir</strong>: N (norte), S (sur).</li>
+<li><strong>long</strong>: Longitud de la estacion. Positivo si la dirección es este, negativo si la dirección es oeste.</li>
+<li><strong>lat_dir</strong>: E (este), W (oeste).</li>
+<li><strong>altitude</strong>: Altitud de la estación en metros.</li>
+<li><strong>town</strong>: Ciudad donde se ubica la estación.</li>
+<li><strong>province</strong>: Provincia donde se ubica la estación.</li>
+<li><strong>year</strong>: Año de la medición.</li>
+<li><strong>month</strong>: Mes de la medición: 1 a 12 referidos a los meses desde Enero a Diciembre..</li>
+<li><strong>day</strong>: Día de la medida.</li>
+<li><strong>max_temp</strong>: Temperatura máxima en la estación para ese día, en ºC.</li>
+<li><strong>max_temp_time</strong>: Hora de a la que se dio la temperatura máxima en formato %H:%M. “Varias” significa que se dio a distintas horas del día.</li>
+<li><strong>min_temp</strong>: Temperatura mínima en la estación para ese día, en ºC.</li>
+<li><strong>min_temp_time</strong>: Hora de a la que se dio la temperatura mínima en formato %H:%M. “Varias” significa que se dio a distintas horas del día.</li>
+<li><strong>avg_temp</strong>: Temperatura media del día, en ºC.</li>
+<li><strong>max_wind</strong>: Máxima velocidad del viento, en m/sec.</li>
+<li><strong>max_wind_direction</strong>: Dirección del viento que alcanzó mayor velocidad en grados.</li>
+<li><strong>max_wind_time</strong>: Hora de la máxima velocidad del viento, en formato %H:%M.</li>
+<li><strong>avg_wind</strong>: Velocidad media del viento, en m/sec.</li>
+<li><strong>rainfall</strong>: Lluvia caida durante el día, en mm.</li>
+<li><strong>sun</strong>: Horas de sol.</li>
+<li><strong>max_atmospheric_pressure</strong>: Máxima presión atmosférica, in hPa.</li>
+<li><strong>max_atmospheric_pressure_hour</strong>: Hora de máxima presión atmosférica.</li>
+<li><strong>min_atmospheric_pressure</strong>: Hora de mínima presión atmosférica.</li>
+<li><strong>min_atmospheric_pressure_hour</strong>: Hora de mínima presión atmosférica.</li>
+</ul>
+<p>de los cuales nosotros no usaremos todos, ya que para el caso que nos ocupa no vamos a profundizar mucho, y que además hay datos que por el momento podemos obviar.</p>
+<p>Procedemos a elegir los datos con los que trabajar (repito, nos quedaremos con unas pocas columnas, aunque sería muy interesante hacer uso de todos los datos en el futuro).</p>
+</div>
+<div id="seleccion-de-datos-y-discretizacion." class="section level2">
+<h2>Selección de datos y discretización.</h2>
+<p>Cargamos en memoria en primer lugar la información contenida en el fichero csv:</p>
+<pre class="r"><code>library(readr)
+allWeatherData &lt;- read_csv(&quot;2005_2009_weather_data_spain.csv&quot;)</code></pre>
+<pre><code>## Parsed with column specification:
+## cols(
+##   .default = col_character(),
+##   lat = col_double(),
+##   long = col_double(),
+##   altitude = col_integer(),
+##   year = col_integer(),
+##   month = col_integer(),
+##   day = col_integer(),
+##   max_temp = col_double(),
+##   min_temp = col_double(),
+##   avg_temp = col_double(),
+##   max_wind = col_double(),
+##   max_wind_direction = col_integer(),
+##   avg_wind = col_double(),
+##   sun = col_double(),
+##   max_atmospheric_pressure = col_double(),
+##   min_atmospheric_pressure = col_double(),
+##   date = col_date(format = &quot;&quot;)
+## )</code></pre>
+<pre><code>## See spec(...) for full column specifications.</code></pre>
+<p>De todos los datos disponibles, en esta ocasión vamos a trabajar con los típicos parámetros:</p>
+<ul>
+<li>altitud</li>
+<li>lluvia</li>
+<li>horas de sol</li>
+<li>máxima y minima temperatura</li>
+<li>máxima y mínima presión atmosférica</li>
+</ul>
+<p>Así pues, almaceno en otra variable estos datos en formato <strong>data.frame</strong></p>
+<pre class="r"><code>basicWeather &lt;- data.frame(&quot;altitude&quot;=allWeatherData$altitude,
+                           &quot;rainfall&quot;=allWeatherData$rainfall,
+                           &quot;sun&quot;=allWeatherData$sun,
+                           &quot;max.temp&quot;=allWeatherData$max_temp,
+                           &quot;min.temp&quot;=allWeatherData$min_temp,
+                           &quot;max.press&quot;=allWeatherData$max_atmospheric_pressure,
+                           &quot;min.press&quot;=allWeatherData$min_atmospheric_pressure)</code></pre>
+<p>Un primer análisis de los datos podemos conseguirlo mediante <strong>summary</strong></p>
+<pre class="r"><code>summary(basicWeather)</code></pre>
+<pre><code>##     altitude         rainfall           sun            max.temp     
+##  Min.   :   2.0   0      :116523   Min.   : 0.000   Min.   :-10.90  
+##  1st Qu.:  35.0   Ip     :  7141   1st Qu.: 3.900   1st Qu.: 15.30  
+##  Median : 192.0   0.1    :  3295   Median : 7.900   Median : 20.90  
+##  Mean   : 380.8   0.2    :  2596   Mean   : 7.172   Mean   : 20.88  
+##  3rd Qu.: 639.0   0.3    :  1822   3rd Qu.:10.400   3rd Qu.: 26.40  
+##  Max.   :2371.0   (Other): 36414   Max.   :15.000   Max.   : 45.00  
+##                   NA's   :  1024   NA's   :15017    NA's   :959     
+##     min.temp        max.press        min.press     
+##  Min.   :-17.80   Min.   : 756.2   Min.   : 741.1  
+##  1st Qu.:  5.60   1st Qu.: 944.8   1st Qu.: 940.6  
+##  Median : 10.90   Median : 995.4   Median : 990.3  
+##  Mean   : 10.53   Mean   : 976.1   Mean   : 971.9  
+##  3rd Qu.: 15.90   3rd Qu.:1014.1   3rd Qu.:1010.2  
+##  Max.   : 32.20   Max.   :1042.4   Max.   :1039.6  
+##  NA's   :977      NA's   :5090     NA's   :5106</code></pre>
+<p>Estos datos nos dejan ver que, por ejemplo, vamos a entontarnos con muchas mediciones donde no está disponible los valores de presión o de horas de sol, y se tendrá que tener en cuenta a la hora de proceder a las conclusiones.</p>
+<p>Como podemos ver, todas estas columnas contienen valores numéricos</p>
+<pre class="r"><code> View(head(basicWeather))</code></pre>
+<p>por lo que será necesario, o bien factorizar los valores, o bien discretizarlos. Aprovechando el bajo número de columnas, vamos a proceder a discretizar los valores haciendo uso de quantiles:</p>
+<ul>
+<li>para altitud, tomaremos valores mar, bajo, media, alta, muy alta</li>
+<li>para las lluvias: nada, poco, mucho. No uso más intervalos ya que los datos se concentran mucho y los pencentiles dan problemas a la hora de usar la función <strong>cut</strong> Aparece un valor desconocído: Ip, que tomaré como “inapreciable”, es decir, 0.</li>
+<li>para las horas de sol usaré: poco, normal, soleado, muy soleado.</li>
+<li>para las referentes a las temperaturas: bajas, templadas, altas, muy altas</li>
+<li>para las presiones, baja, normal, altas, muy alta</li>
+</ul>
+<pre class="r"><code>basicWeather$altitude &lt;- ordered(cut(basicWeather$altitude,c(0,quantile(basicWeather$altitude,.25),median(basicWeather$altitude),quantile(basicWeather$altitude,.75),Inf)),labels=c(&quot;mar&quot;, &quot;baja&quot;, &quot;media&quot;, &quot;alta&quot;))</code></pre>
+<p>Como los datos de lluvia tienen el dato extraño <strong>Ip</strong>, lo debemos sustituir por 0 antes de discretizar (lo mismo para un valor “Acum” que aparece en unas pocas filas, y los valores NA. NOTA: entiendo es estas modificacoines de datos pueden conllevar a conclusiones incorrectas, ya que estamos interpretando esos valores como lluvía igual a cero, pero como el objetivo de esta práctica no es encontrar reglas reales sino demostrar que se manejar datasets de forma básica, vamos a obviar todas las suposiciones que estoy considerando):</p>
+<pre class="r"><code>basicWeather$rainfall[which(basicWeather$rainfall == &quot;Ip&quot;)] &lt;- 0
+basicWeather$rainfall[which(basicWeather$rainfall == &quot;Acum&quot;)] &lt;- 0
+basicWeather$rainfall[which(is.na(basicWeather$rainfall))] &lt;- 0
+basicWeather$rainfall &lt;- ordered(cut(as.numeric(basicWeather$rainfall),
+                                 c(0,
+                                 median(as.numeric(basicWeather$rainfall)),
+                                 quantile(as.numeric(basicWeather$rainfall),.75),
+                                 Inf)),
+                                 labels=c(&quot;nada&quot;, &quot;poco&quot;, &quot;mucho&quot;))</code></pre>
+<pre class="r"><code>basicWeather$sun &lt;- ordered(cut(basicWeather$sun,
+                                c(0,
+                                  quantile(basicWeather$sun,.25,na.rm = T),
+                                  median(basicWeather$sun,na.rm = T),
+                                  quantile(basicWeather$sun,.75,na.rm = T),
+                                  Inf)),
+                                  labels=c(&quot;poco&quot;, &quot;normal&quot;, &quot;soleado&quot;, &quot;muy soleado&quot;))</code></pre>
+<pre class="r"><code>basicWeather$max.temp &lt;- ordered(cut(basicWeather$max.temp,
+                                     c(0,
+                                       quantile(basicWeather$max.temp,.25,na.rm = T),
+                                       median(basicWeather$max.temp,na.rm = T),
+                                       quantile(basicWeather$max.temp,.75,na.rm = T),
+                                       Inf)),
+                                       labels=c(&quot;bajas&quot;, &quot;templadas&quot;, &quot;altas&quot;, &quot;muy altas&quot;))</code></pre>
+<pre class="r"><code>basicWeather$min.temp &lt;- ordered(cut(basicWeather$min.temp,
+                                     c(0,
+                                       quantile(basicWeather$min.temp,.25,na.rm = T),
+                                       median(basicWeather$min.temp,na.rm = T),
+                                       quantile(basicWeather$min.temp,.75,na.rm = T),
+                                       Inf)),
+                                       labels=c(&quot;bajas&quot;, &quot;templadas&quot;, &quot;altas&quot;, &quot;muy altas&quot;))</code></pre>
+<pre class="r"><code>basicWeather$max.press &lt;- ordered(cut(basicWeather$max.press,
+                                      c(0,
+                                        quantile(basicWeather$max.press,.25,na.rm = T),
+                                        median(basicWeather$max.press,na.rm = T),
+                                        quantile(basicWeather$max.press,.75,na.rm = T),
+                                        Inf)),
+                                        labels=c(&quot;bajas&quot;, &quot;normal&quot;, &quot;altas&quot;, &quot;muy altas&quot;))</code></pre>
+<pre class="r"><code>basicWeather$min.press &lt;- ordered(cut(basicWeather$min.press,
+                                      c(0,
+                                        quantile(basicWeather$min.press,.25,na.rm = T),
+                                        median(basicWeather$min.press,na.rm = T),
+                                        quantile(basicWeather$min.press,.75,na.rm = T),
+                                        Inf)),
+                                        labels=c(&quot;bajas&quot;, &quot;normal&quot;, &quot;altas&quot;, &quot;muy altas&quot;))</code></pre>
+</div>
 
 
 
